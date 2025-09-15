@@ -30,11 +30,11 @@ export class search extends Resource {
 	 * @return {Promise<any>} Returns a promise that resolves with the result retrieved from the SemanticCache.
 	 */
 	async post(data) {
-		let context = this.getContext();
-		//set the posted data to the context for use later
-		context.promptData = data.prompt;
+		if(!data?.prompt) {
+			return;
+		}
 		const md5Hash = stringToMd5(data.prompt);
-		const cacheResult = await SemanticCache.get(md5Hash);
+		const cacheResult = await SemanticCache.get(md5Hash, {prompt: data.prompt});
 		return cacheResult.result;
 	}
 }
@@ -57,8 +57,8 @@ class SearchSource extends Resource {
 	 */
 	async get(key) {
 		const context = this.getContext();
-		let body = await context.data;
-		const embedding = await this._generateEmbedding(context.promptData);
+		const promptData = context?.requestContext?.prompt;
+		const embedding = await this._generateEmbedding(promptData);
 
 		let cachedResult = await this._findCachedResult(embedding);
 		if (cachedResult) {
@@ -68,7 +68,7 @@ class SearchSource extends Resource {
 			return cachedResult;
 		}
 
-		return await this._generateNewResult(context.promptData, embedding);
+		return await this._generateNewResult(promptData, embedding);
 	}
 
 	/**
@@ -82,14 +82,14 @@ class SearchSource extends Resource {
 			model: OLLAMA_EMBEDDING_MODEL,
 			input: promptData,
 		});
-		return embedding.embedding;
+		return embedding.embeddings;
 	}
 
 	/**
 	 * Searches for a cached result based on the provided embedding by querying a semantic cache and returns the nearest match if found.
 	 *
 	 * @param {Object} embedding - The embedding vector used to search for a cached result within the similarity threshold.
-	 * @return {Promise<Object|null>} Returns a cached result entry if a similar entry is found, otherwise returns null.
+	 * @return {Promise<Object|undefined>} Returns a cached result entry if a similar entry is found, otherwise returns null.
 	 */
 	async _findCachedResult(embedding) {
 		const nearbyResults = await SemanticCache.search({
@@ -104,7 +104,7 @@ class SearchSource extends Resource {
 		for await (const entry of nearbyResults) {
 			return {relatedQuery: entry.query};
 		}
-		return null;
+		return;
 	}
 
 	/**
