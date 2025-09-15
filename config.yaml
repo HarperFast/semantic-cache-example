@@ -1,0 +1,7 @@
+loadEnv:
+  files: '.env'
+rest: true
+graphqlSchema:
+  files: 'src/schema.graphql'
+jsResource:
+  files: 'src/resources.js'

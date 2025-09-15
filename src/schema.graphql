@@ -1,0 +1,6 @@
+type SemanticCache @table(database: "cache", expiration: 604800) @export{
+	query: String @primaryKey
+	vector: [Float] @indexed(type: "HNSW")
+	result: String
+	relatedQuery: [SemanticCache] @relationship(to: query)
+}
