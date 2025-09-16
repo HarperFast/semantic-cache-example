@@ -2,6 +2,8 @@
 
 A demonstration project that implements semantic search and caching using Harper and Ollama. This project creates a vector-based semantic cache to store and retrieve similar queries, reducing redundant LLM calls.
 
+NOTE: This project does require Ollama running with an embedding model and an LLM model.
+
 ## Overview
 
 This project showcases how to:
