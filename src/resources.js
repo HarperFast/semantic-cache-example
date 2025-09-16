@@ -1,8 +1,9 @@
-import ollama from 'ollama';
+import {Ollama} from 'ollama';
+const ollama = new Ollama({host: process.env.OLLAMA_HOST});
 import crypto from 'crypto';
 const { SemanticCache } = databases.cache;
-const OLLAMA_EMBEDDING_MODEL = 'nomic-embed-text';
-const OLLAMA_SEARCH_MODEL = 'falcon:7b';
+const OLLAMA_EMBEDDING_MODEL = process.env.OLLAMA_EMBEDDING_MODEL;
+const OLLAMA_SEARCH_MODEL = process.env.OLLAMA_SEARCH_MODEL;
 
 /**
  * Converts a given string to its MD5 hash representation.
@@ -46,7 +47,7 @@ export class search extends Resource {
  * it generates a new result using a specific chat model.
  */
 class SearchSource extends Resource {
-	static SIMILARITY_THRESHOLD = 0.1;
+	static SIMILARITY_THRESHOLD = process.env.SIMILARITY_THRESHOLD;
 
 	/**
 	 * Retrieves data associated with the specified key. If a cached result is available, it is returned.

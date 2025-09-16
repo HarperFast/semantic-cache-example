@@ -1,6 +1,7 @@
+# Cache table with an expiration of 1 week, the purpose of this table is to store the results of chat prompts to offload work from the LLM
 type SemanticCache @table(database: "cache", expiration: 604800) @export{
-	query: String @primaryKey
-	vector: [Float] @indexed(type: "HNSW")
-	result: String
-	relatedQuery: [SemanticCache] @relationship(to: query)
+	query: String @primaryKey # MD5 hash of a prompt
+	vector: [Float] @indexed(type: "HNSW") # The vector representation of a prompt
+	result: String # The result from the chat
+	relatedQuery: [SemanticCache] @relationship(to: query) # Relationship to a similar prompt
 }

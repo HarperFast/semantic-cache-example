@@ -3,7 +3,7 @@
   "name": "vector-index-example",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/resources.js",
   "scripts": {
     "format": "prettier .",
     "format:check": "npm run format -- --check",
