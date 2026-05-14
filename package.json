@@ -1,14 +1,15 @@
 {
   "type": "module",
   "name": "vector-index-example",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "src/resources.js",
   "scripts": {
     "format": "prettier .",
     "format:check": "npm run format -- --check",
     "format:fix": "npm run format -- --write",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node --test \"test/**/*.test.js\""
   },
   "repository": {
     "type": "git",
@@ -26,6 +27,7 @@
     "supertest": "^7.1.4"
   },
   "dependencies": {
+    "@google/genai": "^2.2.0",
     "ollama": "^0.5.17"
   }
 }

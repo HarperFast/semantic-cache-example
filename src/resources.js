@@ -1,9 +1,8 @@
-import {Ollama} from 'ollama';
-const ollama = new Ollama({host: process.env.OLLAMA_HOST});
 import crypto from 'crypto';
+import { createModelProvider } from './providers.js';
+
 const { SemanticCache } = databases.cache;
-const OLLAMA_EMBEDDING_MODEL = process.env.OLLAMA_EMBEDDING_MODEL;
-const OLLAMA_SEARCH_MODEL = process.env.OLLAMA_SEARCH_MODEL;
+const provider = await createModelProvider(process.env);
 
 /**
  * Converts a given string to its MD5 hash representation.
@@ -24,19 +23,29 @@ function stringToMd5(input) {
  * This class extends the Resource class.
  */
 export class search extends Resource {
-	/**
-	 * Sends data to the server and retrieves a cached result based on the data's MD5 hash.
-	 *
-	 * @param {string} data - The data to be posted and used for generating the cache key.
-	 * @return {Promise<any>} Returns a promise that resolves with the result retrieved from the SemanticCache.
-	 */
-	async post(data) {
-		if(!data?.prompt) {
-			return;
-		}
-		const md5Hash = stringToMd5(data.prompt);
-		const cacheResult = await SemanticCache.get(md5Hash, {prompt: data.prompt});
+	static loadAsInstance = false;
+
+	async _lookup(prompt) {
+		const md5Hash = stringToMd5(prompt);
+		const cacheResult = await SemanticCache.get(md5Hash, { prompt });
 		return cacheResult.result;
+	}
+
+	async get(target) {
+		const prompt = target?.get?.('prompt') ?? target?.conditions?.[0]?.value;
+		if (!prompt) {
+			throw new Error(
+				'search requires a "prompt" query param or a conditions[0].value (MCP-style)'
+			);
+		}
+		return this._lookup(prompt);
+	}
+
+	async post(target, data) {
+		if (!data?.prompt) {
+			throw new Error('search POST requires a "prompt" field in the request body');
+		}
+		return this._lookup(data.prompt);
 	}
 }
 
@@ -44,7 +53,7 @@ export class search extends Resource {
  * The SearchSource class provides a way to retrieve or generate results based on user input.
  * It uses embedding models and semantic caching to efficiently find relevant results.
  * If a similar result exists in the cache, it returns the cached result. Otherwise,
- * it generates a new result using a specific chat model.
+ * it generates a new result using the configured chat model.
  */
 class SearchSource extends Resource {
 	static SIMILARITY_THRESHOLD = process.env.SIMILARITY_THRESHOLD;
@@ -59,7 +68,7 @@ class SearchSource extends Resource {
 	async get(key) {
 		const context = this.getContext();
 		const promptData = context?.requestContext?.prompt;
-		const embedding = await this._generateEmbedding(promptData);
+		const embedding = await provider.embed(promptData);
 
 		let cachedResult = await this._findCachedResult(embedding);
 		if (cachedResult) {
@@ -69,21 +78,11 @@ class SearchSource extends Resource {
 			return cachedResult;
 		}
 
-		return await this._generateNewResult(promptData, embedding);
-	}
-
-	/**
-	 * Generates an embedding for the given prompt data using the specified embedding model.
-	 *
-	 * @param {string} promptData - The input data for which the embedding is to be generated.
-	 * @return {Promise<Array<number>>} A promise that resolves to the generated embedding as an array of numbers.
-	 */
-	async _generateEmbedding(promptData) {
-		const embedding = await ollama.embed({
-			model: OLLAMA_EMBEDDING_MODEL,
-			input: promptData,
-		});
-		return embedding.embeddings;
+		const resultText = await provider.chat(promptData);
+		return {
+			vector: embedding,
+			result: resultText,
+		};
 	}
 
 	/**
@@ -106,25 +105,6 @@ class SearchSource extends Resource {
 			return {relatedQuery: entry.query};
 		}
 		return;
-	}
-
-	/**
-	 * Generates a new result based on the provided prompt data and embedding.
-	 *
-	 * @param {string} promptData - The input prompt data provided by the user.
-	 * @param {Object} embedding - The embedding object containing vector data for generating a result.
-	 * @return {Promise<Object>} A promise that resolves to an object containing the vector and the generated result message content.
-	 */
-	async _generateNewResult(promptData, embedding) {
-		const chatResult = await ollama.chat({
-			model: OLLAMA_SEARCH_MODEL,
-			messages: [{ role: 'user', content: promptData }],
-		});
-
-		return {
-			vector: embedding,
-			result: chatResult.message.content,
-		};
 	}
 }
 
