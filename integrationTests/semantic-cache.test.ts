@@ -11,10 +11,11 @@
  *   - GET /search?prompt= validation (missing prompt → 4xx).
  *   - POST /search validation (missing prompt field → 4xx).
  *   - GET /SemanticCache/ returns an empty array (no records yet).
- *   - GET /SemanticCache/:id returns 404 for a non-existent key (schema valid).
  *
- * Note: SemanticCache is a sourcedFrom cache table; direct REST writes (POST/PUT)
- * return 405. The cache is populated only by the source mechanism (AI inference path).
+ * Note: SemanticCache is a sourcedFrom cache table. Direct REST writes return 405,
+ * and GET /SemanticCache/:id triggers the source (which calls Ollama/Gemini) even for
+ * non-existent keys. Per-key reads and write tests require real AI credentials and are
+ * therefore omitted from CI.
  */
 import { suite, test, before, after } from 'node:test';
 import { strictEqual, ok } from 'node:assert/strict';
@@ -105,14 +106,6 @@ void suite('semantic-cache-example', (ctx: ContextWithHarper) => {
     strictEqual(res.status, 200);
     const body = (await res.json()) as unknown;
     ok(Array.isArray(body), `Expected array from /SemanticCache/, got ${JSON.stringify(body)}`);
-  });
-
-  void test('GET /SemanticCache/:id returns 404 for non-existent key (schema is valid)', async () => {
-    // SemanticCache is a sourcedFrom cache table — direct REST writes (POST/PUT)
-    // are not allowed (405); the table is populated only via the source mechanism.
-    // Verify the schema loaded correctly by checking a non-existent key returns 404.
-    const res = await authFetch(ctx, '/SemanticCache/nonexistent-key-xyz');
-    strictEqual(res.status, 404, `Expected 404 for missing key, got ${res.status}`);
   });
 
   void test('GET /search?prompt= with empty string returns an error response', async () => {
