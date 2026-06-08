@@ -104,7 +104,9 @@ void suite('semantic-cache-example', (ctx: ContextWithHarper) => {
     ok(Array.isArray(body), `Expected array from /SemanticCache/, got ${JSON.stringify(body)}`);
   });
 
-  void test('PUT record into SemanticCache and retrieve it', async () => {
+  void test('POST record into SemanticCache and retrieve it', async () => {
+    // SemanticCache is a sourcedFrom cache table — PUT is not allowed (405).
+    // Use POST to create a record directly (the table's auto-REST allows post).
     const key = 'test-md5-hash-abc123';
     const record = {
       query: key,
@@ -112,15 +114,15 @@ void suite('semantic-cache-example', (ctx: ContextWithHarper) => {
       result: 'cached test answer',
     };
 
-    // Write
-    const putRes = await authFetch(ctx, `/SemanticCache/${key}`, {
-      method: 'PUT',
+    // Write via POST
+    const postRes = await authFetch(ctx, `/SemanticCache/`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(record),
     });
     ok(
-      [200, 201, 204].includes(putRes.status),
-      `Expected 2xx from PUT, got ${putRes.status}`,
+      [200, 201, 204].includes(postRes.status),
+      `Expected 2xx from POST, got ${postRes.status}`,
     );
 
     // Read back
