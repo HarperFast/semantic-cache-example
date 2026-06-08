@@ -86,7 +86,7 @@ This project provides a REST API for semantic search with caching. The main func
 ## How It Works
 
 1. **Vector Embeddings**: The system uses the configured provider (Ollama or Gemini) to generate vector embeddings for text queries.
-2. **Semantic Cache**: These embeddings are stored in a HarperDB table with HNSW indexing for fast similarity search.
+2. **Semantic Cache**: These embeddings are stored in a Harper table with HNSW indexing for fast similarity search.
 3. **Similarity Matching**: When a new query comes in, the system looks for semantically similar queries based on vector distance.
 4. **Caching Strategy**: Results are cached with an expiration of one week to balance freshness and performance.
 
