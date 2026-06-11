@@ -17,7 +17,7 @@
  * non-existent keys. Per-key reads and write tests require real AI credentials and are
  * therefore omitted from CI.
  */
-import { suite, test, before, after } from 'node:test';
+import { suite, test, before, after, type SuiteContext } from 'node:test';
 import { strictEqual, ok } from 'node:assert/strict';
 import {
   setupHarperWithFixture,
@@ -51,7 +51,8 @@ function authFetch(
   });
 }
 
-void suite('semantic-cache-example', (ctx: ContextWithHarper) => {
+const ctx = {} as ContextWithHarper;
+void suite('semantic-cache-example', (_suiteCtx: SuiteContext) => {
   before(async () => {
     // Use a minimal Ollama env that satisfies the createModelProvider() guard
     // at module-load time. The test avoids triggering any actual AI calls, so
@@ -79,8 +80,8 @@ void suite('semantic-cache-example', (ctx: ContextWithHarper) => {
 
   void test('GET /search without prompt returns an error response', async () => {
     const res = await authFetch(ctx, '/search');
-    // The resource throws a generic Error for missing prompt; Harper maps this to 4xx or 5xx.
-    ok(res.status >= 400, `Expected error status, got ${res.status}`);
+    // The resource throws a generic Error for missing prompt; Harper maps this to 4xx.
+    ok(res.status >= 400 && res.status < 500, `Expected 4xx status, got ${res.status}`);
   });
 
   void test('POST /search without prompt field returns an error response', async () => {
@@ -89,7 +90,7 @@ void suite('semantic-cache-example', (ctx: ContextWithHarper) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ notAPrompt: 'hello' }),
     });
-    ok(res.status >= 400, `Expected error for missing prompt, got ${res.status}`);
+    ok(res.status >= 400 && res.status < 500, `Expected 4xx for missing prompt, got ${res.status}`);
   });
 
   void test('POST /search with no body returns an error response', async () => {
@@ -98,7 +99,7 @@ void suite('semantic-cache-example', (ctx: ContextWithHarper) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     });
-    ok(res.status >= 400, `Expected error for empty body, got ${res.status}`);
+    ok(res.status >= 400 && res.status < 500, `Expected 4xx for empty body, got ${res.status}`);
   });
 
   void test('GET /SemanticCache/ returns an array (table is accessible)', async () => {
@@ -110,6 +111,6 @@ void suite('semantic-cache-example', (ctx: ContextWithHarper) => {
 
   void test('GET /search?prompt= with empty string returns an error response', async () => {
     const res = await authFetch(ctx, '/search?prompt=');
-    ok(res.status >= 400, `Expected error for empty prompt, got ${res.status}`);
+    ok(res.status >= 400 && res.status < 500, `Expected 4xx for empty prompt, got ${res.status}`);
   });
 });

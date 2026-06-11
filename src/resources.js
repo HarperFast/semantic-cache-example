@@ -56,7 +56,7 @@ export class search extends Resource {
  * it generates a new result using the configured chat model.
  */
 class SearchSource extends Resource {
-	static SIMILARITY_THRESHOLD = process.env.SIMILARITY_THRESHOLD;
+	static SIMILARITY_THRESHOLD = parseFloat(process.env.SIMILARITY_THRESHOLD ?? '0.1');
 
 	/**
 	 * Retrieves data associated with the specified key. If a cached result is available, it is returned.
@@ -72,10 +72,12 @@ class SearchSource extends Resource {
 
 		let cachedResult = await this._findCachedResult(embedding);
 		if (cachedResult) {
-			if( cachedResult.relatedQuery) {
-				cachedResult = await SemanticCache.get(cachedResult.relatedQuery)
+			if (cachedResult.relatedQuery) {
+				const resolved = await SemanticCache.get(cachedResult.relatedQuery);
+				if (resolved) return resolved;
+			} else {
+				return cachedResult;
 			}
-			return cachedResult;
 		}
 
 		const resultText = await provider.chat(promptData);
