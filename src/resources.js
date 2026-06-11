@@ -34,16 +34,14 @@ export class search extends Resource {
 	async get(target) {
 		const prompt = target?.get?.('prompt') ?? target?.conditions?.[0]?.value;
 		if (!prompt) {
-			throw new Error(
-				'search requires a "prompt" query param or a conditions[0].value (MCP-style)'
-			);
+			return { status: 400, data: { error: 'search requires a "prompt" query param or a conditions[0].value (MCP-style)' } };
 		}
 		return this._lookup(prompt);
 	}
 
 	async post(target, data) {
 		if (!data?.prompt) {
-			throw new Error('search POST requires a "prompt" field in the request body');
+			return { status: 400, data: { error: 'search POST requires a "prompt" field in the request body' } };
 		}
 		return this._lookup(data.prompt);
 	}
