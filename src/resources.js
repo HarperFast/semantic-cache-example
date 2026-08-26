@@ -34,16 +34,18 @@ export class search extends Resource {
 	async get(target) {
 		const prompt = target?.get?.('prompt') ?? target?.conditions?.[0]?.value;
 		if (!prompt) {
-			throw new Error(
-				'search requires a "prompt" query param or a conditions[0].value (MCP-style)'
-			);
+			const err = new Error('search requires a "prompt" query param or a conditions[0].value (MCP-style)');
+			err.statusCode = 400;
+			throw err;
 		}
 		return this._lookup(prompt);
 	}
 
 	async post(target, data) {
 		if (!data?.prompt) {
-			throw new Error('search POST requires a "prompt" field in the request body');
+			const err = new Error('search POST requires a "prompt" field in the request body');
+			err.statusCode = 400;
+			throw err;
 		}
 		return this._lookup(data.prompt);
 	}
@@ -56,26 +58,35 @@ export class search extends Resource {
  * it generates a new result using the configured chat model.
  */
 class SearchSource extends Resource {
-	static SIMILARITY_THRESHOLD = process.env.SIMILARITY_THRESHOLD;
+	static SIMILARITY_THRESHOLD = parseFloat(process.env.SIMILARITY_THRESHOLD ?? '0.1');
 
 	/**
 	 * Retrieves data associated with the specified key. If a cached result is available, it is returned.
 	 * Otherwise, a new result is generated based on the context and embedding.
 	 *
-	 * @param {string} key - The key used to identify the data to retrieve.
+	 * @param {string} _key - The cache key (MD5 of the prompt). Unused: the prompt
+	 *   itself arrives via the source context, set by `search._lookup`.
 	 * @return {Promise<any>} A promise that resolves to the retrieved or newly generated result.
 	 */
-	async get(key) {
+	async get(_key) {
 		const context = this.getContext();
 		const promptData = context?.requestContext?.prompt;
-		const embedding = await provider.embed(promptData);
+		// Providers return number[][] — one vector per input (see providers.js).
+		// This app embeds a single prompt, and the schema declares
+		// `vector: [Float] @indexed(type: "HNSW")`, i.e. a flat array. Storing the
+		// outer array would write [[...]] into that column; v5's HNSW index rejects
+		// it with "contains non-finite component at index 0", so every cache write
+		// fails and nothing is ever indexed for similarity search.
+		const [embedding] = await provider.embed(promptData);
 
 		let cachedResult = await this._findCachedResult(embedding);
 		if (cachedResult) {
-			if( cachedResult.relatedQuery) {
-				cachedResult = await SemanticCache.get(cachedResult.relatedQuery)
+			if (cachedResult.relatedQuery) {
+				const resolved = await SemanticCache.get(cachedResult.relatedQuery);
+				if (resolved) return resolved;
+			} else {
+				return cachedResult;
 			}
-			return cachedResult;
 		}
 
 		const resultText = await provider.chat(promptData);

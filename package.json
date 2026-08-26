@@ -2,29 +2,33 @@
   "type": "module",
   "name": "vector-index-example",
   "version": "1.1.0",
-  "description": "",
+  "description": "Semantic search and caching example using Harper with vector embeddings",
   "main": "src/resources.js",
   "scripts": {
     "format": "prettier .",
     "format:check": "npm run format -- --check",
     "format:fix": "npm run format -- --write",
     "lint": "eslint .",
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:integration": "harper-integration-test-run integrationTests/**/*.test.ts"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/HarperDB/vector-index-example.git"
+    "url": "https://github.com/HarperFast/semantic-cache-example.git"
   },
   "private": true,
   "prettier": "@harperdb/code-guidelines/prettier",
   "devDependencies": {
     "@eslint/js": "^9.35.0",
     "@harperdb/code-guidelines": "^0.0.3",
+    "@harperfast/integration-testing": "^0.4.0",
     "@types/stream-json": "^1.7.8",
     "eslint": "^9.35.0",
     "globals": "^16.4.0",
+    "harper": "^5.2.1",
     "prettier": "^3.6.2",
-    "supertest": "^7.1.4"
+    "supertest": "^7.1.4",
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "@google/genai": "^2.2.0",
