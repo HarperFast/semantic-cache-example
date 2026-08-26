@@ -1,10 +1,11 @@
 /**
  * Integration tests for the semantic-cache-example.
  *
- * These tests cover the Harper data and routing layer without requiring a real
- * AI provider (Ollama or Gemini). Tests that exercise the actual embedding/chat
- * path are omitted here because they need live external credentials; those are
- * validated manually or in an environment that has the appropriate keys.
+ * These tests cover the Harper data and routing layer without a model provider
+ * configured. The embed/chat path is covered separately in
+ * semantic-cache-flow.test.ts, which drives the real code path against a stub
+ * Ollama server — no live credentials needed, contrary to what this file
+ * previously assumed.
  *
  * Specifically covered:
  *   - Harper starts and the SemanticCache schema loads cleanly.
@@ -14,8 +15,8 @@
  *
  * Note: SemanticCache is a sourcedFrom cache table. Direct REST writes return 405,
  * and GET /SemanticCache/:id triggers the source (which calls Ollama/Gemini) even for
- * non-existent keys. Per-key reads and write tests require real AI credentials and are
- * therefore omitted from CI.
+ * non-existent keys — which is why those reads belong in the stubbed suite rather
+ * than this one.
  */
 import { suite, test, before, after, type SuiteContext } from 'node:test';
 import { strictEqual, ok } from 'node:assert/strict';

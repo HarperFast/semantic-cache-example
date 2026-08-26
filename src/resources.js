@@ -64,13 +64,20 @@ class SearchSource extends Resource {
 	 * Retrieves data associated with the specified key. If a cached result is available, it is returned.
 	 * Otherwise, a new result is generated based on the context and embedding.
 	 *
-	 * @param {string} key - The key used to identify the data to retrieve.
+	 * @param {string} _key - The cache key (MD5 of the prompt). Unused: the prompt
+	 *   itself arrives via the source context, set by `search._lookup`.
 	 * @return {Promise<any>} A promise that resolves to the retrieved or newly generated result.
 	 */
-	async get(key) {
+	async get(_key) {
 		const context = this.getContext();
 		const promptData = context?.requestContext?.prompt;
-		const embedding = await provider.embed(promptData);
+		// Providers return number[][] — one vector per input (see providers.js).
+		// This app embeds a single prompt, and the schema declares
+		// `vector: [Float] @indexed(type: "HNSW")`, i.e. a flat array. Storing the
+		// outer array would write [[...]] into that column; v5's HNSW index rejects
+		// it with "contains non-finite component at index 0", so every cache write
+		// fails and nothing is ever indexed for similarity search.
+		const [embedding] = await provider.embed(promptData);
 
 		let cachedResult = await this._findCachedResult(embedding);
 		if (cachedResult) {
